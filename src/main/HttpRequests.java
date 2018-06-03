@@ -13,13 +13,13 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 public class HttpRequests {
-    public static String URL = "http://localhost:8080/baseDstu3/";
+    public static String URL = "http://localhost:8080/baseDstu3";
 
     public ArrayList<Patient> getPatients() throws Exception {
         ArrayList<Patient> patients = new ArrayList<Patient>();
 
         CloseableHttpClient httpclient = HttpClients.createDefault();
-        HttpGet httpGet = new HttpGet(URL + "Patient?_sort=name&_pretty=true");
+        HttpGet httpGet = new HttpGet(URL + "/Patient");
         CloseableHttpResponse response = httpclient.execute(httpGet);
         // The underlying HTTP connection is still held by the response object
         // to allow the response content to be streamed directly from the network socket.
@@ -53,5 +53,38 @@ public class HttpRequests {
         }
 
         return patients;
+    }
+
+    public ArrayList<Observation> getObservation(String patient_id) throws Exception {
+        ArrayList<Observation> observations = new ArrayList<Observation>();
+
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        HttpGet httpGet = new HttpGet(URL + "/Observation?patient="+ patient_id);
+        CloseableHttpResponse response = httpclient.execute(httpGet);
+        try {
+            System.out.println(response.getStatusLine());
+            HttpEntity entity = response.getEntity();
+            // do something useful with the response body
+            // and ensure it is fully consumed
+            String responseString = new BasicResponseHandler().handleResponse(response);
+//            System.out.println(responseString);
+
+            JSONObject jsonObj = new JSONObject(responseString);
+            JSONArray jsonArray = jsonObj.getJSONArray("entry");
+
+            Gson gson = new Gson();
+            for(int i=0; i<jsonArray.length(); i++){
+                JSONObject json = jsonArray.getJSONObject(i).getJSONObject("resource");
+                String jsonString = json.toString();
+                Observation observation = gson.fromJson(jsonString, Observation.class);
+                observations.add(observation);
+            }
+
+            EntityUtils.consume(entity);
+        } finally {
+            response.close();
+        }
+
+        return observations;
     }
 }
