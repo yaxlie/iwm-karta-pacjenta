@@ -152,6 +152,24 @@ public class Observation {
     private String effectiveDateTime;
     private String issued;
     private ValueQuantity valueQuantity;
+    private String text;
+    private String valueString;
+
+    public String getValueString() {
+        return valueString;
+    }
+
+    public void setValueString(String valueString) {
+        this.valueString = valueString;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
 
     public String getStatus() {
         return status;

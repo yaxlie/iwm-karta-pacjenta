@@ -1,18 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.ListView?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.BorderPane?>
 
-<GridPane alignment="center" hgap="10" prefHeight="600.0" prefWidth="400.0" vgap="10" xmlns="http://javafx.com/javafx/9.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.MenuController">
-   <columnConstraints>
-      <ColumnConstraints />
-   </columnConstraints>
-   <rowConstraints>
-      <RowConstraints />
-   </rowConstraints>
-   <children>
-      <ListView fx:id="patientsList" prefHeight="325.0" prefWidth="200.0" />
-   </children>
-</GridPane>
+<BorderPane xmlns="http://javafx.com/javafx/9.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.MenuController">
+   <left>
+      <ListView fx:id="patientsList" prefHeight="324.0" prefWidth="150.0" BorderPane.alignment="CENTER" />
+   </left>
+   <right>
+      <ListView fx:id="categoriesList" prefHeight="179.0" prefWidth="150.0" BorderPane.alignment="CENTER" />
+   </right>
+   <top>
+      <ListView fx:id="observationsList" orientation="HORIZONTAL" prefHeight="68.0" prefWidth="869.0" BorderPane.alignment="CENTER" />
+   </top>
+   <center>
+      <LineChart BorderPane.alignment="CENTER">
+         <xAxis>
+            <CategoryAxis side="BOTTOM" />
+         </xAxis>
+         <yAxis>
+            <NumberAxis side="LEFT" />
+         </yAxis>
+      </LineChart>
+   </center>
+   <bottom>
+      <TextArea fx:id="textArea" prefHeight="138.0" prefWidth="869.0" BorderPane.alignment="CENTER" />
+   </bottom>
+</BorderPane>

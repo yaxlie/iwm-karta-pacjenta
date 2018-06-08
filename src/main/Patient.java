@@ -1,5 +1,7 @@
 package main;
 
+import java.util.Arrays;
+
 public class Patient {
 
     public class ValueAddress{
@@ -151,15 +153,15 @@ public class Patient {
         }
 
         public String getFamily() {
-            return family;
+            return family.replaceAll("[^A-Za-z]","");
         }
 
         public void setFamily(String family) {
             this.family = family;
         }
 
-        public String[] getGiven() {
-            return given;
+        public String getGiven() {
+            return Arrays.toString(given).replaceAll("[^A-Za-z]","");
         }
 
         public void setGiven(String[] given) {
