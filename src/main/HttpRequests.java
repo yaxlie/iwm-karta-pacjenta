@@ -12,9 +12,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.logging.Logger;
 
 public class HttpRequests {
     public static String URL = "http://localhost:8080/baseDstu3";
+    Logger logger = Logger.getLogger("Http");
 
     public HashMap<String, Patient> getPatients() throws Exception {
         HashMap<String, Patient> patients = new HashMap<String, Patient>();
@@ -23,7 +25,7 @@ public class HttpRequests {
         HttpGet httpGet = new HttpGet(URL + "/Patient");
         CloseableHttpResponse response = httpclient.execute(httpGet);
         try {
-            System.out.println(response.getStatusLine());
+            logger.info("Wczytywanie pacjentów: " + response.getStatusLine().toString());
             HttpEntity entity = response.getEntity();
             // do something useful with the response body
             // and ensure it is fully consumed
@@ -56,7 +58,7 @@ public class HttpRequests {
         HttpGet httpGet = new HttpGet(URL + "/Observation?patient="+ patient_id);
         CloseableHttpResponse response = httpclient.execute(httpGet);
         try {
-            System.out.println(response.getStatusLine());
+            logger.info("Wczytywanie Obserwacji: " + response.getStatusLine().toString() + " (" + patient_id + ")");
             HttpEntity entity = response.getEntity();
             // do something useful with the response body
             // and ensure it is fully consumed
