@@ -6,6 +6,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import jdk.nashorn.internal.runtime.Debug;
@@ -22,7 +24,7 @@ public class MenuController implements Initializable {
     private interface selectionChangeListener{
         public void onChange();
         public void onPatientChange();
-        public void onCategoryChange();
+        public void onCategoryChange(String category);
         public void onObservationChange();
     }
     private abstract class Selected implements selectionChangeListener{
@@ -47,7 +49,7 @@ public class MenuController implements Initializable {
         public void setCategory(String category) {
             this.category = category;
             onChange();
-            onCategoryChange();
+            onCategoryChange(category);
         }
 
         public Observation getObservation() {
@@ -60,20 +62,50 @@ public class MenuController implements Initializable {
         }
     }
 
+    HashMap<String, Patient> patients = null;
+
+    //name -> id
+    HashMap<String, String> patientsIds = new HashMap<String, String>();
+
+    //pacjent -> kategoria -> pomiar
+    HashMap<String, HashMap<String, List<Observation>>> observations = new HashMap<String, HashMap<String, List<Observation>>>();
+    HttpRequests httpRequests = new HttpRequests();
+
+    @FXML
+    private ListView<String> patientsList;
+    @FXML
+    private ListView<String> categoriesList;
+    @FXML
+    private TextArea patientInfo;
+    @FXML
+    private TextArea textArea;
+    @FXML
+    private LineChart lineChart;
+
     Logger logger = Logger.getLogger("Menu");
 
     Selected selected = new Selected() {
         @Override
         public void onChange() {
             if(selected.getCategory()!=null && selected.getPatient() != null){
-                observationsList.getItems().clear();
+                lineChart.getData().clear();
                 textArea.setText("");
                 List<Observation> patientObservations = observations.get(selected.getPatient().getId()).get(selected.getCategory());
                 logger.info("Obserwacje dla: " + selected.getPatient().getId() + " " + selected.getCategory());
                 if(patientObservations != null) {
-                    for (int i = 0; i < patientObservations.size(); i++) {
-                        observationsList.getItems().add(Integer.toString(i));
+                    String seriesText = patientObservations.get(0).getValueQuantity() != null?
+                            selected.getCategory() + " [" + patientObservations.get(0).getValueQuantity().getUnit() + "]": "";
+                    XYChart.Series series = new XYChart.Series();
+                    series.setName(seriesText);
+                    for (int i = patientObservations.size()-1; i >= 0; i--) {
+                        Observation o = patientObservations.get(i);
+                        if(o.getValueQuantity()!=null)
+                            series.getData().add(new XYChart.Data(o.getIssued().split("T")[0],Double.parseDouble(o.getValueQuantity().getValue())));
+                        if(o.getValueString()!=null){
+                            textArea.setText(textArea.getText() + " (" +o.getIssued().split("T")[0] +") " + o.getValueString() + "\n");
+                        }
                     }
+                    lineChart.getData().add(series);
                 }
             }
         }
@@ -87,11 +119,17 @@ public class MenuController implements Initializable {
                 if(key != null)
                     categoriesList.getItems().add(key);
             }
+            Patient p = selected.getPatient();
+            patientInfo.setText(p.getName()[0].getGiven() + " " + p.getName()[0].getFamily()  + " ("+ p.getGender() + ") \n"
+                    + p.getBirthDate() + "\n"
+                    + p.getAddress()[0].getPostalCode() + " " + p.getAddress()[0].getCity()+ " ("
+                    + p.getAddress()[0].getCountry() +", "   + p.getAddress()[0].getState() + ") \n"
+                    + p.getTelecom()[0].getValue());
         }
 
         @Override
-        public void onCategoryChange() {
-
+        public void onCategoryChange(String category) {
+            lineChart.setTitle(category);
         }
 
         @Override
@@ -109,34 +147,9 @@ public class MenuController implements Initializable {
         }
     };
 
-    HashMap<String, Patient> patients = null;
-
-    //name -> id
-    HashMap<String, String> patientsIds = new HashMap<String, String>();
-
-    //pacjent -> kategoria -> pomiar
-    HashMap<String, HashMap<String, List<Observation>>> observations = new HashMap<String, HashMap<String, List<Observation>>>();
-    HttpRequests httpRequests = new HttpRequests();
-
-    @FXML
-    private ListView<String> patientsList;
-    @FXML
-    private ListView<String> categoriesList;
-    @FXML
-    private ListView<String> observationsList;
-    @FXML
-    private TextArea textArea;
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
-        observationsList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                selected.setObservation(observations.get(selected.getPatient()
-                        .getId()).get(selected.getCategory()).get(Integer.parseInt(newValue)));
-            }
-        });
 
         patientsList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override

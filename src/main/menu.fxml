@@ -14,11 +14,8 @@
    <right>
       <ListView fx:id="categoriesList" prefHeight="179.0" prefWidth="150.0" BorderPane.alignment="CENTER" />
    </right>
-   <top>
-      <ListView fx:id="observationsList" orientation="HORIZONTAL" prefHeight="68.0" prefWidth="869.0" BorderPane.alignment="CENTER" />
-   </top>
    <center>
-      <LineChart BorderPane.alignment="CENTER">
+      <LineChart fx:id="lineChart" BorderPane.alignment="CENTER">
          <xAxis>
             <CategoryAxis side="BOTTOM" />
          </xAxis>
@@ -30,4 +27,7 @@
    <bottom>
       <TextArea fx:id="textArea" prefHeight="138.0" prefWidth="869.0" BorderPane.alignment="CENTER" />
    </bottom>
+   <top>
+      <TextArea fx:id="patientInfo" prefHeight="79.0" prefWidth="869.0" BorderPane.alignment="CENTER" />
+   </top>
 </BorderPane>
