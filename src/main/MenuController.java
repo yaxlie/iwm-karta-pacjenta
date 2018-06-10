@@ -8,8 +8,9 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
-import javafx.scene.control.ListView;
+import javafx.scene.control.*;
 import javafx.scene.control.TextArea;
+import javafx.scene.text.Text;
 import jdk.nashorn.internal.runtime.Debug;
 
 import java.awt.*;
@@ -70,6 +71,8 @@ public class MenuController implements Initializable {
     //pacjent -> kategoria -> pomiar
     HashMap<String, HashMap<String, List<Observation>>> observations = new HashMap<String, HashMap<String, List<Observation>>>();
     HttpRequests httpRequests = new HttpRequests();
+    //pacjent -> leczenie
+    HashMap<String, List<MedicationRequest>> medicationRequests = new HashMap<String, List<MedicationRequest>>();
 
     @FXML
     private ListView<String> patientsList;
@@ -78,18 +81,26 @@ public class MenuController implements Initializable {
     @FXML
     private TextArea patientInfo;
     @FXML
-    private TextArea textArea;
+    private TextArea nameText;
+    @FXML
+    private TextArea observationInfo;
+    @FXML
+    private TextArea medicationInfo;
     @FXML
     private LineChart lineChart;
+    @FXML
+    private javafx.scene.control.TextField patientSearch;
+
 
     Logger logger = Logger.getLogger("Menu");
+
 
     Selected selected = new Selected() {
         @Override
         public void onChange() {
             if(selected.getCategory()!=null && selected.getPatient() != null){
                 lineChart.getData().clear();
-                textArea.setText("");
+                observationInfo.setText("");
                 List<Observation> patientObservations = observations.get(selected.getPatient().getId()).get(selected.getCategory());
                 logger.info("Obserwacje dla: " + selected.getPatient().getId() + " " + selected.getCategory());
                 if(patientObservations != null) {
@@ -102,7 +113,7 @@ public class MenuController implements Initializable {
                         if(o.getValueQuantity()!=null)
                             series.getData().add(new XYChart.Data(o.getIssued().split("T")[0],Double.parseDouble(o.getValueQuantity().getValue())));
                         if(o.getValueString()!=null){
-                            textArea.setText(textArea.getText() + " (" +o.getIssued().split("T")[0] +") " + o.getValueString() + "\n");
+                            observationInfo.setText(observationInfo.getText() + " (" +o.getIssued().split("T")[0] +") " + o.getValueString() + "\n");
                         }
                     }
                     lineChart.getData().add(series);
@@ -120,11 +131,17 @@ public class MenuController implements Initializable {
                     categoriesList.getItems().add(key);
             }
             Patient p = selected.getPatient();
-            patientInfo.setText(p.getName()[0].getGiven() + " " + p.getName()[0].getFamily()  + " ("+ p.getGender() + ") \n"
-                    + p.getBirthDate() + "\n"
+            nameText.setText(p.getName()[0].getGiven() + " " + p.getName()[0].getFamily());
+            patientInfo.setText("("+ p.getGender() + ") " + p.getBirthDate() + "\n"
                     + p.getAddress()[0].getPostalCode() + " " + p.getAddress()[0].getCity()+ " ("
                     + p.getAddress()[0].getCountry() +", "   + p.getAddress()[0].getState() + ") \n"
                     + p.getTelecom()[0].getValue());
+            String s = "";
+            for(MedicationRequest m : medicationRequests.get(p.getId())){
+                s+=m.getAuthoredOn() + ", " + m.getExtension()[0].getValueCodeableConcept().getText()
+                        + "  ---> " + m.getMedicationCodeableConcept().getText() + "\n";
+            }
+            medicationInfo.setText(s);
         }
 
         @Override
@@ -139,10 +156,10 @@ public class MenuController implements Initializable {
                         selected.getObservation().getValueQuantity().getValue() : "";
                 String unit = selected.getObservation().getValueQuantity().getUnit() != null ?
                         selected.getObservation().getValueQuantity().getUnit() : "";
-                textArea.setText(text + " [" + unit + "]");
+                observationInfo.setText(text + " [" + unit + "]");
             }
             else if(selected.getObservation().getValueString() != null){
-                textArea.setText(selected.getObservation().getValueString());
+                observationInfo.setText(selected.getObservation().getValueString());
             }
         }
     };
@@ -150,6 +167,12 @@ public class MenuController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
+        patientSearch.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
+                setFxList(newValue);
+            }
+        });
 
         patientsList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
@@ -184,12 +207,39 @@ public class MenuController implements Initializable {
             e.printStackTrace();
         }
 
+        try {
+            logger.info("Wczytywanie listy leczenia...");
+            for(Patient p : patients.values()){
+                ArrayList<MedicationRequest> patientMedications = httpRequests.getMedicationRequest(p.getId());
+                for(MedicationRequest m : patientMedications){
+                    addMedication(m, p);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        //powiazanie id z imionami
+        for(Patient patient : patients.values()){
+            String name = patient.getName()[0].getFamily() + " " + patient.getName()[0].getGiven();
+            patientsIds.put(name, patient.getId());
+        }
+
         //dodaj pacjentow do fx listy
+        setFxList();
+    }
+
+    private void setFxList(){
+        setFxList("");
+    }
+
+    private void setFxList(String filter){
+        patientsList.getItems().clear();
         assert patients != null;
         for(Patient patient : patients.values()){
             String name = patient.getName()[0].getFamily() + " " + patient.getName()[0].getGiven();
-            patientsList.getItems().add(name);
-            patientsIds.put(name, patient.getId());
+            if(name.toUpperCase().contains(filter.toUpperCase()))
+                patientsList.getItems().add(name);
         }
     }
 
@@ -206,5 +256,15 @@ public class MenuController implements Initializable {
         }
         //w koncu dodaj pomiar
         observations.get(p.getId()).get(oCategory).add(o);
+    }
+
+    private void addMedication(MedicationRequest m, Patient p){
+
+        //jesli pacjent w danej kategorii jest nowy, to stworz nowa podmape
+        if(medicationRequests.get(p.getId()) == null){
+            medicationRequests.put(p.getId(), new ArrayList<MedicationRequest>());
+        }
+        //w koncu dodaj pomiar
+        medicationRequests.get(p.getId()).add(m);
     }
 }

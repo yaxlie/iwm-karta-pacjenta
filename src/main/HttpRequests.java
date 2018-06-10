@@ -83,4 +83,37 @@ public class HttpRequests {
 
         return observations;
     }
+
+    public ArrayList<MedicationRequest> getMedicationRequest(String patient_id) throws Exception {
+        ArrayList<MedicationRequest> medicationRequests = new ArrayList<MedicationRequest>();
+
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        HttpGet httpGet = new HttpGet(URL + "/MedicationRequest?patient="+ patient_id + "&_sort=authoredon");
+        CloseableHttpResponse response = httpclient.execute(httpGet);
+        try {
+            logger.info("Wczytywanie wpisów leczenia: " + response.getStatusLine().toString() + " (" + patient_id + ")");
+            HttpEntity entity = response.getEntity();
+            // do something useful with the response body
+            // and ensure it is fully consumed
+            String responseString = new BasicResponseHandler().handleResponse(response);
+//            System.out.println(responseString);
+
+            JSONObject jsonObj = new JSONObject(responseString);
+            JSONArray jsonArray = jsonObj.getJSONArray("entry");
+
+            Gson gson = new Gson();
+            for(int i=0; i<jsonArray.length(); i++){
+                JSONObject json = jsonArray.getJSONObject(i).getJSONObject("resource");
+                String jsonString = json.toString();
+                MedicationRequest medicationRequest = gson.fromJson(jsonString, MedicationRequest.class);
+                medicationRequests.add(medicationRequest);
+            }
+
+            EntityUtils.consume(entity);
+        } finally {
+            response.close();
+        }
+
+        return medicationRequests;
+    }
 }
