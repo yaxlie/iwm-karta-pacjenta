@@ -126,7 +126,7 @@ public class MenuController implements Initializable {
             categoriesList.getItems().clear();
             assert observations != null;
             for (String key : observations.get(selected.getPatient().getId()).keySet()) {
-                //todo zamiast tego wyrzucic nulle z kontenera wczesniej
+				//todo
                 if(key != null)
                     categoriesList.getItems().add(key);
             }
